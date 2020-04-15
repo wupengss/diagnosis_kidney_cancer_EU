@@ -114,6 +114,7 @@ def parse_args():
 # log and diaplay
   parser.add_argument('--use_tfb', dest='use_tfboard',
                       help='whether use tensorboard',
+                      default=1,
                       action='store_true')
 
   args = parser.parse_args()
