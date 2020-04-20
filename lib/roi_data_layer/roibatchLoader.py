@@ -177,6 +177,9 @@ class roibatchLoader(data.Dataset):
             padding_data[:, :data_width, :] = data[0]
             im_info[0, 1] = padding_data.size(1)
         else:
+            if self._roidb[0]['image'].endswith("npy"):
+                num_boxes = min(gt_boxes.size(0), self.max_num_box)
+                return data, im_info, gt_boxes, num_boxes
             trim_size = min(data_height, data_width)
             padding_data = torch.FloatTensor(trim_size, trim_size, 3).zero_()
             padding_data = data[0][:trim_size, :trim_size, :]

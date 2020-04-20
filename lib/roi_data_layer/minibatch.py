@@ -42,15 +42,26 @@ def get_minibatch(roidb, num_classes):
   else:
     # For the COCO ground truth boxes, exclude the ones that are ''iscrowd'' 
     gt_inds = np.where((roidb[0]['gt_classes'] != 0) & np.all(roidb[0]['gt_overlaps'].toarray() > -1.0, axis=1))[0]
-  gt_boxes = np.empty((len(gt_inds), 5), dtype=np.float32)
-  gt_boxes[:, 0:4] = roidb[0]['boxes'][gt_inds, :] * im_scales[0]
-  gt_boxes[:, 4] = roidb[0]['gt_classes'][gt_inds]
-  blobs['gt_boxes'] = gt_boxes
-  blobs['im_info'] = np.array(
-    [[im_blob.shape[1], im_blob.shape[2], im_scales[0]]],
-    dtype=np.float32)
+  if roidb[0]['boxes'].shape[1]>4:
+    gt_boxes = np.empty((len(gt_inds), 7), dtype=np.float32)
+    gt_boxes[:, 0:6] = roidb[0]['boxes'][gt_inds, :] * im_scales[0]
+    gt_boxes[:, 6] = roidb[0]['gt_classes'][gt_inds]
+    blobs['gt_boxes'] = gt_boxes
+    blobs['im_info'] = np.array(
+      [[im_blob.shape[1], im_blob.shape[2], im_blob.shape[3], im_scales[0]]],
+      dtype=np.float32)
 
-  blobs['img_id'] = roidb[0]['img_id']
+    blobs['img_id'] = roidb[0]['img_id']
+  else:
+    gt_boxes = np.empty((len(gt_inds), 5), dtype=np.float32)
+    gt_boxes[:, 0:4] = roidb[0]['boxes'][gt_inds, :] * im_scales[0]
+    gt_boxes[:, 4] = roidb[0]['gt_classes'][gt_inds]
+    blobs['gt_boxes'] = gt_boxes
+    blobs['im_info'] = np.array(
+      [[im_blob.shape[1], im_blob.shape[2], im_scales[0]]],
+      dtype=np.float32)
+
+    blobs['img_id'] = roidb[0]['img_id']
 
   return blobs
 
@@ -64,7 +75,10 @@ def _get_image_blob(roidb, scale_inds):
   im_scales = []
   for i in range(num_images):
     #im = cv2.imread(roidb[i]['image'])
-    im = imread(roidb[i]['image'])
+    if roidb[i]['image'].endswith("npy"):
+      im = np.load(roidb[i]['image'])
+    else:
+      im = imread(roidb[i]['image'])
 
     if len(im.shape) == 2:
       im = im[:,:,np.newaxis]
@@ -75,9 +89,10 @@ def _get_image_blob(roidb, scale_inds):
 
     if roidb[i]['flipped']:
       im = im[:, ::-1, :]
+    im_postfix = roidb[i]['image']
     target_size = cfg.TRAIN.SCALES[scale_inds[i]]
     im, im_scale = prep_im_for_blob(im, cfg.PIXEL_MEANS, target_size,
-                    cfg.TRAIN.MAX_SIZE)
+                    cfg.TRAIN.MAX_SIZE, im_postfix)
     im_scales.append(im_scale)
     processed_ims.append(im)
 
