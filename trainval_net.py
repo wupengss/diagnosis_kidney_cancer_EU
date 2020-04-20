@@ -239,15 +239,15 @@ if __name__ == '__main__':
 
   # initilize the network here.
   if args.net == 'vgg16':
-    fasterRCNN = vgg16(imdb.classes, pretrained=True, class_agnostic=args.class_agnostic, args.net)
+    fasterRCNN = vgg16(imdb.classes, args.net, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res101':
-    fasterRCNN = resnet(imdb.classes, 101, pretrained=True, class_agnostic=args.class_agnostic, args.net)
+    fasterRCNN = resnet(imdb.classes, args.net, 101, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res18_3d':
-    fasterRCNN = resnet(imdb.classes, 18, pretrained=False, class_agnostic=args.class_agnostic, args.net)
+    fasterRCNN = resnet(imdb.classes, args.net, 18, pretrained=False, class_agnostic=args.class_agnostic)
   elif args.net == 'res50':
-    fasterRCNN = resnet(imdb.classes, 50, pretrained=True, class_agnostic=args.class_agnostic, args.net)
+    fasterRCNN = resnet(imdb.classes, args.net, 50, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res152':
-    fasterRCNN = resnet(imdb.classes, 152, pretrained=True, class_agnostic=args.class_agnostic, args.net)
+    fasterRCNN = resnet(imdb.classes, args.net, 152, pretrained=True, class_agnostic=args.class_agnostic)
   else:
     print("network is not defined")
     pdb.set_trace()
