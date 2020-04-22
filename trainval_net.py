@@ -31,7 +31,7 @@ from model.utils.net_utils import weights_normal_init, save_net, load_net, \
       adjust_learning_rate, save_checkpoint, clip_gradient
 
 from model.faster_rcnn.vgg16 import vgg16
-from model.faster_rcnn.resnet import resnet
+from model.faster_rcnn.resnet import resnet, resnet3d
 
 def parse_args():
   """
@@ -40,10 +40,10 @@ def parse_args():
   parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
   parser.add_argument('--dataset', dest='dataset',
                       help='training dataset',
-                      default='pascal_voc', type=str)
+                      default='kits_19', type=str)
   parser.add_argument('--net', dest='net',
                     help='vgg16, res101',
-                    default='res101', type=str)
+                    default='res18_3d', type=str)
   parser.add_argument('--start_epoch', dest='start_epoch',
                       help='starting epoch',
                       default=1, type=int)
@@ -243,7 +243,7 @@ if __name__ == '__main__':
   elif args.net == 'res101':
     fasterRCNN = resnet(imdb.classes, args.net, 101, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res18_3d':
-    fasterRCNN = resnet(imdb.classes, args.net, 18, pretrained=False, class_agnostic=args.class_agnostic)
+    fasterRCNN = resnet3d(imdb.classes, args.net, 18, pretrained=False, class_agnostic=args.class_agnostic)
   elif args.net == 'res50':
     fasterRCNN = resnet(imdb.classes, args.net, 50, pretrained=True, class_agnostic=args.class_agnostic)
   elif args.net == 'res152':

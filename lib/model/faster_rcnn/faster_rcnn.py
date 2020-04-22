@@ -6,14 +6,14 @@ from torch.autograd import Variable
 import torchvision.models as models
 import numpy as np
 from model.utils.config import cfg
-from model.rpn.rpn import _RPN
+from model.rpn.rpn import _RPN, _RPN3d
 
 from model.roi_layers import ROIAlign, ROIPool
 
 # from model.roi_pooling.modules.roi_pool import _RoIPooling
 # from model.roi_align.modules.roi_align import RoIAlignAvg
 
-from model.rpn.proposal_target_layer_cascade import _ProposalTargetLayer
+from model.rpn.proposal_target_layer_cascade import _ProposalTargetLayer, _ProposalTargetLayer3d
 import time
 import pdb
 from model.utils.net_utils import _smooth_l1_loss, _crop_pool_layer, _affine_grid_gen, _affine_theta
@@ -49,11 +49,15 @@ class _fasterRCNN(nn.Module):
         # feed image data to base model to obtain base feature map
         base_feat = self.RCNN_base(im_data)
 
-        # feed base feature map tp RPN to obtain rois
+            #rois的shape=(batch, post_top_n, 5), 是排序后并经过nms后的post_top_n个anchor
+            # (经过网络预测的delta修正原始anchor之后的anchor)，这些anchor都是映射回MxN的图像的，
+            #  并且经过剪切， 不会超出图像的大小， 每个anchor由1个占位和x1, y1, x2, y2这4个坐标组成
         rois, rpn_loss_cls, rpn_loss_bbox = self.RCNN_rpn(base_feat, im_info, gt_boxes, num_boxes)
 
         # if it is training phrase, then use ground trubut bboxes for refining
         if self.training:
+            #只有训练阶段有， 目的是得到128个与anchor有最大IOU的gt_box的label, 以及gt_box与anchor之间的偏移
+            # ,用作求类别loss和精边框回归loss. 
             roi_data = self.RCNN_proposal_target(rois, gt_boxes, num_boxes)
             rois, rois_label, rois_target, rois_inside_ws, rois_outside_ws = roi_data
 
@@ -130,10 +134,10 @@ class _fasterRCNN(nn.Module):
         self._init_modules(net)
         self._init_weights()
 
-class _fasterRCNN_3d(nn.Module):
+class _fasterRCNN3d(nn.Module):
     """ faster RCNN """
     def __init__(self, classes, class_agnostic):
-        super(_fasterRCNN, self).__init__()
+        super(_fasterRCNN3d, self).__init__()
         self.classes = classes
         self.n_classes = len(classes)
         self.class_agnostic = class_agnostic
@@ -142,8 +146,8 @@ class _fasterRCNN_3d(nn.Module):
         self.RCNN_loss_bbox = 0
 
         # define rpn
-        self.RCNN_rpn = _RPN_3d(self.dout_base_model)
-        self.RCNN_proposal_target = _ProposalTargetLayer(self.n_classes)
+        self.RCNN_rpn = _RPN3d(self.dout_base_model)
+        self.RCNN_proposal_target = _ProposalTargetLayer3d(self.n_classes)
 
         # self.RCNN_roi_pool = _RoIPooling(cfg.POOLING_SIZE, cfg.POOLING_SIZE, 1.0/16.0)
         # self.RCNN_roi_align = RoIAlignAvg(cfg.POOLING_SIZE, cfg.POOLING_SIZE, 1.0/16.0)

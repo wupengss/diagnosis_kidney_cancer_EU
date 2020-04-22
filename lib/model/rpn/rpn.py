@@ -5,8 +5,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 from model.utils.config import cfg
-from .proposal_layer import _ProposalLayer
-from .anchor_target_layer import _AnchorTargetLayer
+from .proposal_layer import _ProposalLayer, _ProposalLayer3d
+from .anchor_target_layer import _AnchorTargetLayer, _AnchorTargetLayer3d
 from model.utils.net_utils import _smooth_l1_loss
 
 import numpy as np
@@ -62,19 +62,22 @@ class _RPN(nn.Module):
         # return feature map after convrelu layer
         rpn_conv1 = F.relu(self.RPN_Conv(base_feat), inplace=True)
         
-        # get rpn classification score
+        # get rpn classification score,即每个anchor前景和背景的得分
         rpn_cls_score = self.RPN_cls_score(rpn_conv1)
 
         rpn_cls_score_reshape = self.reshape(rpn_cls_score, 2)
         rpn_cls_prob_reshape = F.softmax(rpn_cls_score_reshape, 1)
         rpn_cls_prob = self.reshape(rpn_cls_prob_reshape, self.nc_score_out)
 
-        # get rpn offsets to the anchor boxes
+        # get rpn offsets to the anchor boxes，得到每个anchor偏移的预测值
         rpn_bbox_pred = self.RPN_bbox_pred(rpn_conv1)
 
         # proposal layer
         cfg_key = 'TRAIN' if self.training else 'TEST'
 
+        #rois的shape=(batch, post_top_n, 5), 是排序后并经过nms后的post_top_n个anchor
+        # (经过网络预测的delta修正原始anchor之后的anchor)，这些anchor都是映射回MxN的图像的， 
+        # 并且经过剪切， 不会超出图像的大小， 每个anchor由1个占位和x1, y1, x2, y2这4个坐标组成
         rois = self.RPN_proposal((rpn_cls_prob.data, rpn_bbox_pred.data,
                                  im_info, cfg_key))
 
@@ -85,6 +88,7 @@ class _RPN(nn.Module):
         if self.training:
             assert gt_boxes is not None
 
+            #
             rpn_data = self.RPN_anchor_target((rpn_cls_score.data, gt_boxes, im_info, num_boxes))
 
             # compute classification loss
@@ -100,7 +104,7 @@ class _RPN(nn.Module):
 
             rpn_bbox_targets, rpn_bbox_inside_weights, rpn_bbox_outside_weights = rpn_data[1:]
 
-            # compute bbox regression loss
+            # compute bbox regression loss 
             rpn_bbox_inside_weights = Variable(rpn_bbox_inside_weights)
             rpn_bbox_outside_weights = Variable(rpn_bbox_outside_weights)
             rpn_bbox_targets = Variable(rpn_bbox_targets)
@@ -110,13 +114,13 @@ class _RPN(nn.Module):
 
         return rois, self.rpn_loss_cls, self.rpn_loss_box
 
-class _RPN_3d(nn.Module):
+class _RPN3d(nn.Module):
     """ region proposal network """
     def __init__(self, din):
-        super(_RPN, self).__init__()
+        super(_RPN3d, self).__init__()
         
         self.din = din  # get depth of input feature map, e.g., 512
-        self.anchor_scales = cfg.ANCHOR_SCALES
+        self.anchor_scales = [4,8,16]
         self.anchor_ratios = cfg.ANCHOR_RATIOS
         self.feat_stride = cfg.FEAT_STRIDE[0]
 
@@ -124,18 +128,18 @@ class _RPN_3d(nn.Module):
         self.RPN_Conv = nn.Conv3d(self.din, 24, 3, 1, 1, bias=True)
 
         # define bg/fg classifcation score layer
-        self.nc_score_out = len(self.anchor_scales) * len(self.anchor_ratios) * 2 # 2(bg/fg) * 9 (anchors)
+        self.nc_score_out = len(self.anchor_scales) * 4 * 2 # 2(bg/fg) * 12 (anchors)
         self.RPN_cls_score = nn.Conv3d(24, self.nc_score_out, 1, 1, 0)
 
         # define anchor box offset prediction layer
-        self.nc_bbox_out = len(self.anchor_scales) * len(self.anchor_ratios) * 4 # 4(coords) * 9 (anchors)
+        self.nc_bbox_out = len(self.anchor_scales) * 4 * 6 # 6(coords) * 12 (anchors)
         self.RPN_bbox_pred = nn.Conv3d(24, self.nc_bbox_out, 1, 1, 0)
 
         # define proposal layer
-        self.RPN_proposal = _ProposalLayer(self.feat_stride, self.anchor_scales, self.anchor_ratios)
+        self.RPN_proposal = _ProposalLayer3d(self.feat_stride, self.anchor_scales)
 
         # define anchor target layer
-        self.RPN_anchor_target = _AnchorTargetLayer(self.feat_stride, self.anchor_scales, self.anchor_ratios)
+        self.RPN_anchor_target = _AnchorTargetLayer3d(self.feat_stride, self.anchor_scales)
 
         self.rpn_loss_cls = 0
         self.rpn_loss_box = 0
@@ -147,7 +151,8 @@ class _RPN_3d(nn.Module):
             input_shape[0],
             int(d),
             int(float(input_shape[1] * input_shape[2]) / float(d)),
-            input_shape[3]
+            input_shape[3],
+            input_shape[4]
         )
         return x
 
