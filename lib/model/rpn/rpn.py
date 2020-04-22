@@ -189,7 +189,7 @@ class _RPN3d(nn.Module):
             rpn_data = self.RPN_anchor_target((rpn_cls_score.data, gt_boxes, im_info, num_boxes))
 
             # compute classification loss
-            rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 1).contiguous().view(batch_size, -1, 2)
+            rpn_cls_score = rpn_cls_score_reshape.permute(0, 2, 3, 4, 1).contiguous().view(batch_size, -1, 2)
             rpn_label = rpn_data[0].view(batch_size, -1)
 
             rpn_keep = Variable(rpn_label.view(-1).ne(-1).nonzero().view(-1))

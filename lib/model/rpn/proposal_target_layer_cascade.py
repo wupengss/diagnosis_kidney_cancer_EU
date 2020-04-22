@@ -15,6 +15,7 @@ import numpy as np
 import numpy.random as npr
 from ..utils.config import cfg
 from .bbox_transform import bbox_overlaps_batch, bbox_transform_batch
+from .bbox_transform import bbox_overlaps_batch_3d, bbox_transform_batch_3d
 import pdb
 
 class _ProposalTargetLayer(nn.Module):
@@ -221,9 +222,9 @@ class _ProposalTargetLayer3d(nn.Module):
     def __init__(self, nclasses):
         super(_ProposalTargetLayer3d, self).__init__()
         self._num_classes = nclasses
-        self.BBOX_NORMALIZE_MEANS = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS)
-        self.BBOX_NORMALIZE_STDS = torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS)
-        self.BBOX_INSIDE_WEIGHTS = torch.FloatTensor(cfg.TRAIN.BBOX_INSIDE_WEIGHTS)
+        self.BBOX_NORMALIZE_MEANS = torch.FloatTensor([0,0,0,0,0,0])
+        self.BBOX_NORMALIZE_STDS = torch.FloatTensor([0.1,0.1,0.2,0.2,0.2,0.2])
+        self.BBOX_INSIDE_WEIGHTS = torch.FloatTensor([1,1,1,1,1,1])
 
     def forward(self, all_rois, gt_boxes, num_boxes):
 
@@ -232,7 +233,7 @@ class _ProposalTargetLayer3d(nn.Module):
         self.BBOX_INSIDE_WEIGHTS = self.BBOX_INSIDE_WEIGHTS.type_as(gt_boxes)
 
         gt_boxes_append = gt_boxes.new(gt_boxes.size()).zero_()
-        gt_boxes_append[:,:,1:5] = gt_boxes[:,:,:4]
+        gt_boxes_append[:,:,1:7] = gt_boxes[:,:,:6]
 
         # Include ground-truth boxes in the set of candidate rois
         all_rois = torch.cat([all_rois.cuda(), gt_boxes_append.cuda()], 1)
@@ -272,7 +273,7 @@ class _ProposalTargetLayer3d(nn.Module):
         batch_size = labels_batch.size(0)
         rois_per_image = labels_batch.size(1)
         clss = labels_batch
-        bbox_targets = bbox_target_data.new(batch_size, rois_per_image, 4).zero_()
+        bbox_targets = bbox_target_data.new(batch_size, rois_per_image, 6).zero_()
         bbox_inside_weights = bbox_target_data.new(bbox_targets.size()).zero_()
 
         for b in range(batch_size):
@@ -292,13 +293,13 @@ class _ProposalTargetLayer3d(nn.Module):
         """Compute bounding-box regression targets for an image."""
 
         assert ex_rois.size(1) == gt_rois.size(1)
-        assert ex_rois.size(2) == 4
-        assert gt_rois.size(2) == 4
+        assert ex_rois.size(2) == 6
+        assert gt_rois.size(2) == 6
 
         batch_size = ex_rois.size(0)
         rois_per_image = ex_rois.size(1)
 
-        targets = bbox_transform_batch(ex_rois, gt_rois)
+        targets = bbox_transform_batch_3d(ex_rois, gt_rois)
 
         if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
             # Optionally normalize targets by a precomputed mean and stdev
@@ -314,7 +315,7 @@ class _ProposalTargetLayer3d(nn.Module):
         """
         # overlaps: (rois x gt_boxes)
 
-        overlaps = bbox_overlaps_batch(all_rois, gt_boxes)
+        overlaps = bbox_overlaps_batch_3d(all_rois, gt_boxes)
 
         max_overlaps, gt_assignment = torch.max(overlaps, 2)
 
@@ -326,11 +327,11 @@ class _ProposalTargetLayer3d(nn.Module):
         offset = offset.view(-1, 1).type_as(gt_assignment) + gt_assignment
 
         # changed indexing way for pytorch 1.0
-        labels = gt_boxes[:,:,4].contiguous().view(-1)[(offset.view(-1),)].view(batch_size, -1)
+        labels = gt_boxes[:,:,6].contiguous().view(-1)[(offset.view(-1),)].view(batch_size, -1)
 
         labels_batch = labels.new(batch_size, rois_per_image).zero_()
-        rois_batch  = all_rois.new(batch_size, rois_per_image, 5).zero_()
-        gt_rois_batch = all_rois.new(batch_size, rois_per_image, 5).zero_()
+        rois_batch  = all_rois.new(batch_size, rois_per_image, 7).zero_()
+        gt_rois_batch = all_rois.new(batch_size, rois_per_image, 7).zero_()
         # Guard against the case when an image has fewer than max_fg_rois_per_image
         # foreground RoIs
         for i in range(batch_size):
@@ -400,7 +401,7 @@ class _ProposalTargetLayer3d(nn.Module):
             gt_rois_batch[i] = gt_boxes[i][gt_assignment[i][keep_inds]]
 
         bbox_target_data = self._compute_targets_pytorch(
-                rois_batch[:,:,1:5], gt_rois_batch[:,:,:4])
+                rois_batch[:,:,1:7], gt_rois_batch[:,:,:6])
 
         bbox_targets, bbox_inside_weights = \
                 self._get_bbox_regression_labels_pytorch(bbox_target_data, labels_batch, num_classes)

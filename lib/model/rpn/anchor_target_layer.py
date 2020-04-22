@@ -347,7 +347,7 @@ class _AnchorTargetLayer3d(nn.Module):
         outputs = []
 
         labels = labels.view(batch_size, height, width, slices, A).permute(0,4,1,2,3).contiguous()
-        labels = labels.view(batch_size, 1, A * height, width)
+        labels = labels.view(batch_size, 1, A * height, width, slices)
         outputs.append(labels)
 
         bbox_targets = bbox_targets.view(batch_size, height, width, slices, A*6).permute(0,4,1,2,3).contiguous()

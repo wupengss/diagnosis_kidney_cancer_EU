@@ -189,9 +189,9 @@ class _fasterRCNN3d(nn.Module):
         # do roi pooling based on predicted rois
 
         if cfg.POOLING_MODE == 'align':
-            pooled_feat = self.RCNN_roi_align(base_feat, rois.view(-1, 5))
+            pooled_feat = self.RCNN_roi_align(base_feat, rois.view(-1, 7))
         elif cfg.POOLING_MODE == 'pool':
-            pooled_feat = self.RCNN_roi_pool(base_feat, rois.view(-1,5))
+            pooled_feat = self.RCNN_roi_pool(base_feat, rois.view(-1,7))
 
         # feed pooled features to top model
         pooled_feat = self._head_to_tail(pooled_feat)
@@ -200,8 +200,8 @@ class _fasterRCNN3d(nn.Module):
         bbox_pred = self.RCNN_bbox_pred(pooled_feat)
         if self.training and not self.class_agnostic:
             # select the corresponding columns according to roi labels
-            bbox_pred_view = bbox_pred.view(bbox_pred.size(0), int(bbox_pred.size(1) / 4), 4)
-            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.cuda().view(rois_label.cuda().size(0), 1, 1).expand(rois_label.cuda().size(0), 1, 4))
+            bbox_pred_view = bbox_pred.view(bbox_pred.size(0), int(bbox_pred.size(1) / 6), 6)
+            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.cuda().view(rois_label.cuda().size(0), 1, 1).expand(rois_label.cuda().size(0), 1, 6))
             bbox_pred = bbox_pred_select.squeeze(1)
 
         # compute object classification probability
