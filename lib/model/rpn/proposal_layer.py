@@ -17,6 +17,7 @@ import yaml
 from model.utils.config import cfg
 from .generate_anchors import generate_anchors
 from .bbox_transform import bbox_transform_inv, clip_boxes, clip_boxes_batch
+from .bbox_transform import bbox_transform_inv_3d, clip_boxes_3d, clip_boxes_batch_3d
 # from model.nms.nms_wrapper import nms
 from model.roi_layers import nms
 import pdb
@@ -195,8 +196,8 @@ class _ProposalLayer3d(nn.Module):
         im_info = input[2]
         cfg_key = input[3]
 
-        pre_nms_topN  = cfg[cfg_key].RPN_PRE_NMS_TOP_N
-        post_nms_topN = cfg[cfg_key].RPN_POST_NMS_TOP_N
+        pre_nms_topN  = 6000
+        post_nms_topN = 1000
         nms_thresh    = cfg[cfg_key].RPN_NMS_THRESH
         min_size      = cfg[cfg_key].RPN_MIN_SIZE
 
@@ -230,10 +231,10 @@ class _ProposalLayer3d(nn.Module):
         scores = scores.view(batch_size, -1)
 
         # Convert anchors into proposals via bbox transformations
-        proposals = bbox_transform_inv(anchors, bbox_deltas, batch_size)
+        proposals = bbox_transform_inv_3d(anchors, bbox_deltas, batch_size)
 
         # 2. clip predicted boxes to image
-        proposals = clip_boxes(proposals, im_info, batch_size)
+        proposals = clip_boxes_3d(proposals, im_info, batch_size)
         # proposals = clip_boxes_batch(proposals, im_info, batch_size)
 
         # assign the score to 0 if it's non keep.
@@ -251,7 +252,7 @@ class _ProposalLayer3d(nn.Module):
         proposals_keep = proposals
         _, order = torch.sort(scores_keep, 1, True)
 
-        output = scores.new(batch_size, post_nms_topN, 5).zero_()
+        output = scores.new(batch_size, post_nms_topN, 7).zero_()
         for i in range(batch_size):
             # # 3. remove predicted boxes with either height or width < threshold
             # # (NOTE: convert min_size to input image scale stored in im_info[2])

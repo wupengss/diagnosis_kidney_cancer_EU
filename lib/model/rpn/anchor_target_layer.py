@@ -17,6 +17,7 @@ import numpy.random as npr
 from model.utils.config import cfg
 from .generate_anchors import generate_anchors
 from .bbox_transform import clip_boxes, bbox_overlaps_batch, bbox_transform_batch
+from .bbox_transform import bbox_overlaps_batch_3d, bbox_transform_batch_3d
 from .generate_anchors_3d import generate_anchors_3d
 import pdb
 
@@ -231,31 +232,34 @@ class _AnchorTargetLayer3d(nn.Module):
         num_boxes = input[3]
 
         # map of shape (..., H, W)
-        height, width = rpn_cls_score.size(2), rpn_cls_score.size(3)
+        height, width, slices = rpn_cls_score.size(2), rpn_cls_score.size(3), rpn_cls_score.size(4)
 
         batch_size = gt_boxes.size(0)
 
-        feat_height, feat_width = rpn_cls_score.size(2), rpn_cls_score.size(3)
+        feat_height, feat_width, feat_slices = rpn_cls_score.size(2), rpn_cls_score.size(3), rpn_cls_score.size(4)
         shift_x = np.arange(0, feat_width) * self._feat_stride
         shift_y = np.arange(0, feat_height) * self._feat_stride
-        shift_x, shift_y = np.meshgrid(shift_x, shift_y)
-        shifts = torch.from_numpy(np.vstack((shift_x.ravel(), shift_y.ravel(),
-                                  shift_x.ravel(), shift_y.ravel())).transpose())
+        shift_z = np.arange(0, feat_slices) * self._feat_stride
+        shift_x, shift_y, shift_z = np.meshgrid(shift_x, shift_y, shift_z)
+        shifts = torch.from_numpy(np.vstack((shift_x.ravel(), shift_y.ravel(), shift_z.ravel(),
+                                  shift_x.ravel(), shift_y.ravel(), shift_z.ravel())).transpose())
         shifts = shifts.contiguous().type_as(rpn_cls_score).float()
 
         A = self._num_anchors
         K = shifts.size(0)
 
         self._anchors = self._anchors.type_as(gt_boxes).cuda() # move to specific gpu.
-        all_anchors = self._anchors.view(1, A, 4) + shifts.view(K, 1, 4)
-        all_anchors = all_anchors.view(K * A, 4)
+        all_anchors = self._anchors.view(1, A, 6) + shifts.view(K, 1, 6)
+        all_anchors = all_anchors.view(K * A, 6)
 
         total_anchors = int(K * A)
 
         keep = ((all_anchors[:, 0] >= -self._allowed_border) &
                 (all_anchors[:, 1] >= -self._allowed_border) &
-                (all_anchors[:, 2] < long(im_info[0][1]) + self._allowed_border) &
-                (all_anchors[:, 3] < long(im_info[0][0]) + self._allowed_border))
+                (all_anchors[:, 2] >= -self._allowed_border) &
+                (all_anchors[:, 2] < long(im_info[0][0][1]) + self._allowed_border) &
+                (all_anchors[:, 3] < long(im_info[0][0][0]) + self._allowed_border) &
+                (all_anchors[:, 5] < long(im_info[0][0][2]) + self._allowed_border))
 
         inds_inside = torch.nonzero(keep).view(-1)
 
@@ -267,7 +271,7 @@ class _AnchorTargetLayer3d(nn.Module):
         bbox_inside_weights = gt_boxes.new(batch_size, inds_inside.size(0)).zero_()
         bbox_outside_weights = gt_boxes.new(batch_size, inds_inside.size(0)).zero_()
 
-        overlaps = bbox_overlaps_batch(anchors, gt_boxes)
+        overlaps = bbox_overlaps_batch_3d(anchors, gt_boxes)
 
         max_overlaps, argmax_overlaps = torch.max(overlaps, 2)
         gt_max_overlaps, _ = torch.max(overlaps, 1)
@@ -319,7 +323,7 @@ class _AnchorTargetLayer3d(nn.Module):
         offset = torch.arange(0, batch_size)*gt_boxes.size(1)
 
         argmax_overlaps = argmax_overlaps + offset.view(batch_size, 1).type_as(argmax_overlaps)
-        bbox_targets = _compute_targets_batch(anchors, gt_boxes.view(-1,5)[argmax_overlaps.view(-1), :].view(batch_size, -1, 5))
+        bbox_targets = _compute_targets_batch_3d(anchors, gt_boxes.view(-1,7)[argmax_overlaps.view(-1), :].view(batch_size, -1, 7))
 
         # use a single value instead of 4 values for easy index.
         bbox_inside_weights[labels==1] = cfg.TRAIN.RPN_BBOX_INSIDE_WEIGHTS[0]
@@ -342,24 +346,24 @@ class _AnchorTargetLayer3d(nn.Module):
 
         outputs = []
 
-        labels = labels.view(batch_size, height, width, A).permute(0,3,1,2).contiguous()
+        labels = labels.view(batch_size, height, width, slices, A).permute(0,4,1,2,3).contiguous()
         labels = labels.view(batch_size, 1, A * height, width)
         outputs.append(labels)
 
-        bbox_targets = bbox_targets.view(batch_size, height, width, A*4).permute(0,3,1,2).contiguous()
+        bbox_targets = bbox_targets.view(batch_size, height, width, slices, A*6).permute(0,4,1,2,3).contiguous()
         outputs.append(bbox_targets)
 
         anchors_count = bbox_inside_weights.size(1)
-        bbox_inside_weights = bbox_inside_weights.view(batch_size,anchors_count,1).expand(batch_size, anchors_count, 4)
+        bbox_inside_weights = bbox_inside_weights.view(batch_size,anchors_count,1).expand(batch_size, anchors_count, 6)
 
-        bbox_inside_weights = bbox_inside_weights.contiguous().view(batch_size, height, width, 4*A)\
-                            .permute(0,3,1,2).contiguous()
+        bbox_inside_weights = bbox_inside_weights.contiguous().view(batch_size, height, width, slices, 6*A)\
+                            .permute(0,4,1,2,3).contiguous()
 
         outputs.append(bbox_inside_weights)
 
-        bbox_outside_weights = bbox_outside_weights.view(batch_size,anchors_count,1).expand(batch_size, anchors_count, 4)
-        bbox_outside_weights = bbox_outside_weights.contiguous().view(batch_size, height, width, 4*A)\
-                            .permute(0,3,1,2).contiguous()
+        bbox_outside_weights = bbox_outside_weights.view(batch_size,anchors_count,1).expand(batch_size, anchors_count, 6)
+        bbox_outside_weights = bbox_outside_weights.contiguous().view(batch_size, height, width, slices, 6*A)\
+                            .permute(0,4,1,2,3).contiguous()
         outputs.append(bbox_outside_weights)
 
         return outputs
@@ -389,3 +393,8 @@ def _compute_targets_batch(ex_rois, gt_rois):
     """Compute bounding-box regression targets for an image."""
 
     return bbox_transform_batch(ex_rois, gt_rois[:, :, :4])
+
+def _compute_targets_batch_3d(ex_rois, gt_rois):
+    """Compute bounding-box regression targets for an image."""
+
+    return bbox_transform_batch_3d(ex_rois, gt_rois[:, :, :6])
