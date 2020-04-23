@@ -8,7 +8,7 @@ import numpy as np
 from model.utils.config import cfg
 from model.rpn.rpn import _RPN, _RPN3d
 
-from model.roi_layers import ROIAlign, ROIPool
+from model.roi_layers import ROIAlign, ROIPool, ROIPool_3d
 
 # from model.roi_pooling.modules.roi_pool import _RoIPooling
 # from model.roi_align.modules.roi_align import RoIAlignAvg
@@ -152,7 +152,7 @@ class _fasterRCNN3d(nn.Module):
         # self.RCNN_roi_pool = _RoIPooling(cfg.POOLING_SIZE, cfg.POOLING_SIZE, 1.0/16.0)
         # self.RCNN_roi_align = RoIAlignAvg(cfg.POOLING_SIZE, cfg.POOLING_SIZE, 1.0/16.0)
 
-        self.RCNN_roi_pool = ROIPool((cfg.POOLING_SIZE, cfg.POOLING_SIZE), 1.0/16.0)
+        self.RCNN_roi_pool = ROIPool_3d((cfg.POOLING_SIZE, cfg.POOLING_SIZE, cfg.POOLING_SIZE), 1.0/16.0)
         self.RCNN_roi_align = ROIAlign((cfg.POOLING_SIZE, cfg.POOLING_SIZE), 1.0/16.0, 0)
 
     def forward(self, im_data, im_info, gt_boxes, num_boxes):
@@ -191,7 +191,7 @@ class _fasterRCNN3d(nn.Module):
         if cfg.POOLING_MODE == 'align':
             pooled_feat = self.RCNN_roi_align(base_feat, rois.view(-1, 7))
         elif cfg.POOLING_MODE == 'pool':
-            pooled_feat = self.RCNN_roi_pool(base_feat, rois.view(-1,7))
+            pooled_feat = self.RCNN_roi_pool(base_feat, rois)
 
         # feed pooled features to top model
         pooled_feat = self._head_to_tail(pooled_feat)
