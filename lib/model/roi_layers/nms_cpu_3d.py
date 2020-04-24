@@ -4,17 +4,17 @@ import numpy as np
 import torch
 
 def nms_cpu_3d(dets, scores, thresh):
-    dets = dets.numpy()
-    x1 = dets[:, 0]
-    y1 = dets[:, 1]
-    z1 = dets[:, 2]
-    x2 = dets[:, 3]
-    y2 = dets[:, 4]
-    z2 = dets[:, 5]
+    #dets = dets.numpy()
+    x1 = dets[:, 0].cpu()
+    y1 = dets[:, 1].cpu()
+    z1 = dets[:, 2].cpu()
+    x2 = dets[:, 3].cpu()
+    y2 = dets[:, 4].cpu()
+    z2 = dets[:, 5].cpu()
     scores = scores
 
     areas = (x2 - x1 + 1) * (y2 - y1 + 1) * (z2 - z1 + 1)
-    order = scores.argsort()[::-1]
+    order = scores.argsort(descending=True)
 
     keep = []
     while order.size()[0] > 0:

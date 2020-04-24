@@ -195,7 +195,7 @@ class _fasterRCNN3d(nn.Module):
 
         # feed pooled features to top model
         pooled_feat = self._head_to_tail(pooled_feat)
-
+        pooled_feat = pooled_feat.view(-1,512)
         # compute bbox offset
         bbox_pred = self.RCNN_bbox_pred(pooled_feat)
         if self.training and not self.class_agnostic:
@@ -217,7 +217,6 @@ class _fasterRCNN3d(nn.Module):
 
             # bounding box regression L1 loss
             RCNN_loss_bbox = _smooth_l1_loss(bbox_pred.cpu(), rois_target.cpu(), rois_inside_ws.cpu(), rois_outside_ws.cpu())
-
 
         cls_prob = cls_prob.view(batch_size, rois.size(1), -1)
         bbox_pred = bbox_pred.view(batch_size, rois.size(1), -1)

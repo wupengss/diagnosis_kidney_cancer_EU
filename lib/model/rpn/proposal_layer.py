@@ -19,7 +19,7 @@ from .generate_anchors import generate_anchors
 from .bbox_transform import bbox_transform_inv, clip_boxes, clip_boxes_batch
 from .bbox_transform import bbox_transform_inv_3d, clip_boxes_3d, clip_boxes_batch_3d
 # from model.nms.nms_wrapper import nms
-from model.roi_layers import nms
+from model.roi_layers import nms_cpu_3d, nms
 import pdb
 from .generate_anchors_3d import generate_anchors_3d
 
@@ -272,7 +272,7 @@ class _ProposalLayer3d(nn.Module):
             # 6. apply nms (e.g. threshold = 0.7)
             # 7. take after_nms_topN (e.g. 300)
             # 8. return the top proposals (-> RoIs top)
-            keep_idx_i = nms(proposals_single, scores_single.squeeze(1), nms_thresh)
+            keep_idx_i = nms_cpu_3d(proposals_single, scores_single.squeeze(1), nms_thresh)
             keep_idx_i = keep_idx_i.long().view(-1)
 
             if post_nms_topN > 0:

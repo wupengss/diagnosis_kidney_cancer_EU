@@ -428,11 +428,11 @@ class resnet3d(_fasterRCNN3d):
 
     self.RCNN_top = nn.Sequential(resnet.layer4)
 
-    self.RCNN_cls_score = nn.Linear(2048, self.n_classes)
+    self.RCNN_cls_score = nn.Linear(512, self.n_classes)
     if self.class_agnostic:
-      self.RCNN_bbox_pred = nn.Linear(2048, 4)
+      self.RCNN_bbox_pred = nn.Linear(512, 4)
     else:
-      self.RCNN_bbox_pred = nn.Linear(2048, 4 * self.n_classes)
+      self.RCNN_bbox_pred = nn.Linear(512, 4 * self.n_classes)
 
     # Fix blocks
     for p in self.RCNN_base[0].parameters(): p.requires_grad=False

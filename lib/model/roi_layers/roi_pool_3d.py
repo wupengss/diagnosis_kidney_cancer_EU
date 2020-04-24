@@ -1,4 +1,5 @@
 import time
+import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.autograd import Function
@@ -15,11 +16,17 @@ class roi_pooling(Function):
         rois[:, :, 1:].mul_(spatial_scale)
         for i in range(num_rois):
             roi = rois[:, i, 1:]
-            im = input[..., roi[:,0]:(roi[:,3] + 1), roi[:,1]:(roi[:,4] + 1), roi[:,2]:(roi[:,5] + 1)]
+            w_ = int(torch.round(roi[:,3] + 1)) - int(torch.round(roi[:,0]))
+            h_ = int(torch.round(roi[:,4] + 1)) - int(torch.round(roi[:,1]))
+            s_ = int(torch.round(roi[:,5] + 1)) - int(torch.round(roi[:,2]))
+            if w_ < 7 or h_ <7 or s_ <7:
+                continue
+            im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
+                int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))]
             output.append(F.adaptive_max_pool3d(im, size))
         output = torch.cat(output, 0)
-        if has_backward:
-            output.sum().backward()
+        #if has_backward:
+        #    output.sum().backward()
         return output
 roi_pooling = roi_pooling.apply
 
