@@ -1,4 +1,23 @@
 from __future__ import absolute_import
+
+import math
+import pdb
+
+import numpy as np
+import torch
+import torch.nn as nn
+import yaml
+
+# from model.nms.nms_wrapper import nms
+from model.roi_layers import nms, nms_cpu_3d
+from model.utils.config import cfg
+
+from .bbox_transform import (bbox_transform_inv, bbox_transform_inv_3d,
+                             clip_boxes, clip_boxes_3d, clip_boxes_batch,
+                             clip_boxes_batch_3d)
+from .generate_anchors import generate_anchors
+from .generate_anchors_3d import generate_anchors_3d
+
 # --------------------------------------------------------
 # Faster R-CNN
 # Copyright (c) 2015 Microsoft
@@ -9,19 +28,6 @@ from __future__ import absolute_import
 # Reorganized and modified by Jianwei Yang and Jiasen Lu
 # --------------------------------------------------------
 
-import torch
-import torch.nn as nn
-import numpy as np
-import math
-import yaml
-from model.utils.config import cfg
-from .generate_anchors import generate_anchors
-from .bbox_transform import bbox_transform_inv, clip_boxes, clip_boxes_batch
-from .bbox_transform import bbox_transform_inv_3d, clip_boxes_3d, clip_boxes_batch_3d
-# from model.nms.nms_wrapper import nms
-from model.roi_layers import nms_cpu_3d, nms
-import pdb
-from .generate_anchors_3d import generate_anchors_3d
 
 DEBUG = False
 
@@ -93,6 +99,7 @@ class _ProposalLayer(nn.Module):
         # anchors = self._anchors.view(1, A, 4) + shifts.view(1, K, 4).permute(1, 0, 2).contiguous()
         anchors = self._anchors.view(1, A, 4) + shifts.view(K, 1, 4)
         anchors = anchors.view(1, K * A, 4).expand(batch_size, K * A, 4)
+
 
         # Transpose and reshape predicted bbox transformations to get them
         # into the same order as the anchors:
@@ -196,7 +203,7 @@ class _ProposalLayer3d(nn.Module):
         im_info = input[2]
         cfg_key = input[3]
 
-        pre_nms_topN  = 6000
+        pre_nms_topN  = 3000
         post_nms_topN = 1000
         nms_thresh    = cfg[cfg_key].RPN_NMS_THRESH
         min_size      = cfg[cfg_key].RPN_MIN_SIZE
