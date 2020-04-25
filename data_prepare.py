@@ -9,6 +9,13 @@ import SimpleITK as sitk
 from multiprocessing import Pool
 from functools import partial
 
+def lumTrans(img):
+    lungwin = np.array([-1200.,600.])
+    newimg = (img-lungwin[0])/(lungwin[1]-lungwin[0])
+    newimg[newimg<0]=0
+    newimg[newimg>1]=1
+    newimg = (newimg*255).astype('uint8')
+    return newimg
 
 def savenpy_kits19(filelist, kits19_segment, kits19_data,savepath):
     labels_kits = pd.DataFrame({"index":[],"coord":[],"label":[]})
@@ -67,6 +74,7 @@ def savenpy_kits19(filelist, kits19_segment, kits19_data,savepath):
         ## read and save original file
             origin = sitk.ReadImage(original_file)
             origin = sitk.GetArrayFromImage(origin)
+            origin_trans = lumTrans(origin)
             np.save(os.path.join(savepath, name+'_mat.npy'), origin)
 
     ## save label inforamtion
