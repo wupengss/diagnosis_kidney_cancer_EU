@@ -123,7 +123,7 @@ class _RPN3d(nn.Module):
         self.anchor_scales = [4,8,16]
         self.anchor_ratios = cfg.ANCHOR_RATIOS
         self.feat_stride = cfg.FEAT_STRIDE[0]
-
+        self.RPN_Norm = nn.BatchNorm3d(24)
         # define the convrelu layers processing input feature map
         self.RPN_Conv = nn.Conv3d(self.din, 24, 3, 1, 1, bias=True)
 
@@ -169,10 +169,9 @@ class _RPN3d(nn.Module):
         rpn_cls_score_reshape = self.reshape(rpn_cls_score, 2)
         rpn_cls_prob_reshape = F.softmax(rpn_cls_score_reshape, 1)
         rpn_cls_prob = self.reshape(rpn_cls_prob_reshape, self.nc_score_out)
-
+        normed_rnp_conv1 = self.RPN_Norm(rpn_conv1)
         # get rpn offsets to the anchor boxes
-        rpn_bbox_pred = self.RPN_bbox_pred(rpn_conv1)
-
+        rpn_bbox_pred = self.RPN_bbox_pred(normed_rnp_conv1)
         # proposal layer
         cfg_key = 'TRAIN' if self.training else 'TEST'
 
