@@ -10,9 +10,11 @@ class roi_pooling(Function):
 
     @staticmethod
     def forward(ctx, input, rois, size, spatial_scale):
+        Ada_pooling = nn.AdaptiveMaxPool3d(size,True)
         ctx.output_size = size
         ctx.spatial_scale = spatial_scale
         output = []
+        argsmax_data = []
         rois = rois.data.float()
         num_rois = rois.size(1)
         has_backward = True
@@ -24,8 +26,10 @@ class roi_pooling(Function):
             s_ = int(torch.round(roi[:,5] + 1)) - int(torch.round(roi[:,2]))
             im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
                 int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))].cuda()
-            output.append(nn.AdaptiveMaxPool3d(im, size))
-        ctx.save_for_backward(input,roi)
+            out = Ada_pooling(im)
+            output.append(out[0])
+            argsmax_data.append(out[1])
+        ctx.save_for_backward(input,roi,argsmax_data)
         output = torch.cat(output, 0)
         #if has_backward:
         #    output.sum().backward()
