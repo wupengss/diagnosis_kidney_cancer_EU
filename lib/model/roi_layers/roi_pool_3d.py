@@ -24,7 +24,7 @@ class roi_pooling(Function):
             s_ = int(torch.round(roi[:,5] + 1)) - int(torch.round(roi[:,2]))
             im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
                 int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))].cuda()
-            output.append(F.adaptive_max_pool3d(im, size))
+            output.append(nn.AdaptiveMaxPool3d(im, size))
         ctx.save_for_backward(input,roi)
         output = torch.cat(output, 0)
         #if has_backward:
@@ -33,7 +33,7 @@ class roi_pooling(Function):
     @staticmethod
     @once_differentiable
     def backward(ctx,grad_output):
-        return grad_output
+        return output.sum().backward()
 
 
 roi_pooling = roi_pooling.apply
