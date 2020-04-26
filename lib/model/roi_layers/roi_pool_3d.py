@@ -19,8 +19,6 @@ class roi_pooling(Function):
             w_ = int(torch.round(roi[:,3] + 1)) - int(torch.round(roi[:,0]))
             h_ = int(torch.round(roi[:,4] + 1)) - int(torch.round(roi[:,1]))
             s_ = int(torch.round(roi[:,5] + 1)) - int(torch.round(roi[:,2]))
-            if w_ < 7 or h_ <7 or s_ <7:
-                continue
             im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
                 int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))]
             output.append(F.adaptive_max_pool3d(im, size))

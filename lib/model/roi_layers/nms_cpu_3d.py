@@ -23,9 +23,9 @@ def nms_cpu_3d(dets, scores, thresh):
         xx1 = np.maximum(x1[i], x1[order[1:]])
         yy1 = np.maximum(y1[i], y1[order[1:]])
         zz1 = np.maximum(z1[i], z1[order[1:]])
-        xx2 = np.maximum(x2[i], x2[order[1:]])
-        yy2 = np.maximum(y2[i], y2[order[1:]])
-        zz2 = np.maximum(z2[i], z2[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
+        zz2 = np.minimum(z2[i], z2[order[1:]])
 
         w = np.maximum(0.0, xx2 - xx1 + 1)
         h = np.maximum(0.0, yy2 - yy1 + 1)

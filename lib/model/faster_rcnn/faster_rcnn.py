@@ -195,7 +195,6 @@ class _fasterRCNN3d(nn.Module):
 
         # feed pooled features to top model
         pooled_feat = self._head_to_tail(pooled_feat)
-        pooled_feat = pooled_feat.view(-1,512)
         # compute bbox offset
         bbox_pred = self.RCNN_bbox_pred(pooled_feat)
         if self.training and not self.class_agnostic:

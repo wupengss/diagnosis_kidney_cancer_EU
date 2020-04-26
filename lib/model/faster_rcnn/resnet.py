@@ -400,22 +400,15 @@ class resnet(_fasterRCNN):
 class resnet3d(_fasterRCNN3d):
   def __init__(self, classes, net, num_layers=101, pretrained=False, class_agnostic=False):
     self.model_path = 'data/pretrained_model/resnet101_caffe.pth'
-    if net == 'res18_3d':
-      self.dout_base_model = 256
-    else:
-      self.dout_base_model = 1024
+    self.dout_base_model = 256
     self.pretrained = pretrained
     self.class_agnostic = class_agnostic
-    if net == 'res18_3d':
-      _fasterRCNN3d.__init__(self, classes, class_agnostic)
-    else:
-      _fasterRCNN.__init__(self, classes, class_agnostic)
+
+    _fasterRCNN3d.__init__(self, classes, class_agnostic)
+
 
   def _init_modules(self,net):
-    if net == 'res18_3d':
-      resnet = resnet18_3d()
-    else:
-      resnet = resnet101()
+    resnet = resnet18_3d()
 
     if self.pretrained == True:
       print("Loading pretrained weights from %s" %(self.model_path))
@@ -430,9 +423,9 @@ class resnet3d(_fasterRCNN3d):
 
     self.RCNN_cls_score = nn.Linear(512, self.n_classes)
     if self.class_agnostic:
-      self.RCNN_bbox_pred = nn.Linear(512, 4)
+      self.RCNN_bbox_pred = nn.Linear(512, 6)
     else:
-      self.RCNN_bbox_pred = nn.Linear(512, 4 * self.n_classes)
+      self.RCNN_bbox_pred = nn.Linear(512, 6 * self.n_classes)
 
     # Fix blocks
     for p in self.RCNN_base[0].parameters(): p.requires_grad=False
@@ -472,5 +465,5 @@ class resnet3d(_fasterRCNN3d):
       self.RCNN_top.apply(set_bn_eval)
 
   def _head_to_tail(self, pool5):
-    fc7 = self.RCNN_top(pool5).mean(3).mean(2)
+    fc7 = self.RCNN_top(pool5).mean(4).mean(3).mean(2)
     return fc7
