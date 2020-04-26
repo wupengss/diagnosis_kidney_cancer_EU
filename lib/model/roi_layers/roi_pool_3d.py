@@ -3,12 +3,15 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.autograd import Function
+from torch.autograd.function import once_differentiable
 from torch.autograd import Variable
 
 class roi_pooling(Function):
 
     @staticmethod
     def forward(ctx, input, rois, size, spatial_scale):
+        ctx.output_size = size
+        ctx.spatial_scale = spatial_scale
         output = []
         rois = rois.data.float()
         num_rois = rois.size(1)
@@ -22,10 +25,16 @@ class roi_pooling(Function):
             im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
                 int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))].cuda()
             output.append(F.adaptive_max_pool3d(im, size))
+        ctx.save_for_backward(input,roi)
         output = torch.cat(output, 0)
         #if has_backward:
         #    output.sum().backward()
         return output
+    @staticmethod
+    @once_differentiable
+    def backward(ctx,grad_output):
+        return grad_output
+
 
 roi_pooling = roi_pooling.apply
 
