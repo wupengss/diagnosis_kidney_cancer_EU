@@ -20,12 +20,13 @@ class roi_pooling(Function):
             h_ = int(torch.round(roi[:,4] + 1)) - int(torch.round(roi[:,1]))
             s_ = int(torch.round(roi[:,5] + 1)) - int(torch.round(roi[:,2]))
             im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
-                int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))]
+                int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))].cuda()
             output.append(F.adaptive_max_pool3d(im, size))
         output = torch.cat(output, 0)
         #if has_backward:
         #    output.sum().backward()
         return output
+
 roi_pooling = roi_pooling.apply
 
 class ROIPool_3d(nn.Module):
