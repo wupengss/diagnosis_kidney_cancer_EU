@@ -159,7 +159,7 @@ class kits_19(imdb):
             cls = self._class_to_ind[case["label"].values[i]]
             gt_classes[i] = cls
             overlaps[i, cls] = 1.0
-            seg_areas[i] = (boxes[i,1]-boxes[i,0]) * (boxes[i,3]-boxes[i,2])*(boxes[i,5]-boxes[i,4])
+            seg_areas[i] = (boxes[i,3]-boxes[i,0]) * (boxes[i,4]-boxes[i,1])*(boxes[i,5]-boxes[i,2])
 
         overlaps = scipy.sparse.csr_matrix(overlaps)
 

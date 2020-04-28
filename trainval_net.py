@@ -15,7 +15,7 @@ import argparse
 import pprint
 import pdb
 import time
-
+os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -40,10 +40,10 @@ def parse_args():
   parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
   parser.add_argument('--dataset', dest='dataset',
                       help='training dataset',
-                      default='kits_19', type=str)
+                      default='pascal_voc', type=str)
   parser.add_argument('--net', dest='net',
                     help='vgg16, res101',
-                    default='res18_3d', type=str)
+                    default='res101', type=str)
   parser.add_argument('--start_epoch', dest='start_epoch',
                       help='starting epoch',
                       default=1, type=int)

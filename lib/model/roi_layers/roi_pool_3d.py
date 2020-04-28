@@ -21,27 +21,25 @@ class roi_pooling(Function):
         rois[:, :, 1:].mul_(spatial_scale)
         for i in range(num_rois):
             roi = rois[:, i, 1:]
-            w_ = int(torch.round(roi[:,3] + 1)) - int(torch.round(roi[:,0]))
-            h_ = int(torch.round(roi[:,4] + 1)) - int(torch.round(roi[:,1]))
-            s_ = int(torch.round(roi[:,5] + 1)) - int(torch.round(roi[:,2]))
-            im = input[..., int(torch.round(roi[:,0])):int(torch.round(roi[:,3] + 1)), \
-                int(torch.round(roi[:,1])):int(torch.round(roi[:,4] + 1)), int(torch.round(roi[:,2])):int(torch.round(roi[:,5] + 1))].cuda()
+            im = input[..., int(torch.round(roi[:,0])*spatial_scale):int(torch.round(roi[:,3])*spatial_scale+1), \
+                int(torch.round(roi[:,1])*spatial_scale):int(torch.round(roi[:,4])*spatial_scale+1), int(torch.round(roi[:,2])*spatial_scale):int(torch.round(roi[:,5])*spatial_scale+1)].cuda()
             out = Ada_pooling(im)
             output.append(out[0])
             argsmax_data.append(out[1])
         argsmax_data = torch.cat(argsmax_data,0)
         ctx.save_for_backward(input,roi,argsmax_data)
-        output = torch.cat(output, 0)
+        output = torch.cat(output, 0).cuda()
         #if has_backward:
         #    output.sum().backward()
-        return output
+        return Variable(output)
+
     @staticmethod
     @once_differentiable
     def backward(ctx,grad_output):
         input, rois, argmax = ctx.saved_tensors
         size = ctx.output_size
         spatial_scale = ctx.spatial_scale
-        grad_input = numpy.zeros(input.shape,rois.dtype)
+        grad_input = torch.zeros(input.shape,rois.dtype).cuda()
         channels, height, width, slices = input.shape[1:]
 
         for i in six.moves.range(rois.size()[1]):
@@ -87,7 +85,7 @@ class roi_pooling(Function):
                                             grad_input[i, c, h, w, z] += \
                                                 grad_output[i, c, ph, pw, ps]
 
-        return Variable(grad_input), None, None, None
+        return Variable(grad_input.cuda()), None, None, None
 
 roi_pooling = roi_pooling.apply
 
@@ -99,3 +97,10 @@ class ROIPool_3d(nn.Module):
 
     def forward(self, input, rois):
         return roi_pooling(input, rois, self.output_size, self.spatial_scale)
+
+    def __repr__(self):
+        tmpstr = self.__class__.__name__ + "("
+        tmpstr += "output_size=" + str(self.output_size)
+        tmpstr += ", spatial_scale=" + str(self.spatial_scale)
+        tmpstr += ")"
+        return tmpstr

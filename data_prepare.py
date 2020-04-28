@@ -56,11 +56,11 @@ def savenpy_kits19(filelist, kits19_segment, kits19_data,savepath):
 
         ## extract bounding box
         
-            bbox_kidney = [[kidney_region[i].bbox[0], kidney_region[i].bbox[3], kidney_region[i].bbox[1], kidney_region[i].bbox[4],\
-            kidney_region[i].bbox[2], kidney_region[i].bbox[5]] for i in Index_kidney]
+            bbox_kidney = [[kidney_region[i].bbox[0], kidney_region[i].bbox[1], kidney_region[i].bbox[2], kidney_region[i].bbox[3],\
+            kidney_region[i].bbox[4], kidney_region[i].bbox[5]] for i in Index_kidney]
 
-            bbox_tumor = [[tumor_region[i].bbox[0], tumor_region[i].bbox[3], tumor_region[i].bbox[1], tumor_region[i].bbox[4],\
-            tumor_region[i].bbox[2], tumor_region[i].bbox[5]] for i in range(len(tumor_region))]
+            bbox_tumor = [[tumor_region[i].bbox[0], tumor_region[i].bbox[1], tumor_region[i].bbox[2], tumor_region[i].bbox[3],\
+            tumor_region[i].bbox[4], tumor_region[i].bbox[5]] for i in range(len(tumor_region))]
 
             bbox_kidney.extend(bbox_tumor)
 
@@ -72,10 +72,10 @@ def savenpy_kits19(filelist, kits19_segment, kits19_data,savepath):
             labels_kits = pd.concat([labels_kits,temp])
 
         ## read and save original file
-            origin = sitk.ReadImage(original_file)
-            origin = sitk.GetArrayFromImage(origin)
-            origin_trans = lumTrans(origin)
-            np.save(os.path.join(savepath, name+'_mat.npy'), origin)
+            #origin = sitk.ReadImage(original_file)
+            #origin = sitk.GetArrayFromImage(origin)
+            #origin_trans = lumTrans(origin)
+            #np.save(os.path.join(savepath, name+'_mat.npy'), origin)
 
     ## save label inforamtion
     labels_kits.to_csv("labels_kits.csv",sep=',',encoding="GB18030",index=False)
