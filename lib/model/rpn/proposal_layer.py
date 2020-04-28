@@ -100,7 +100,6 @@ class _ProposalLayer(nn.Module):
         anchors = self._anchors.view(1, A, 4) + shifts.view(K, 1, 4)
         anchors = anchors.view(1, K * A, 4).expand(batch_size, K * A, 4)
 
-
         # Transpose and reshape predicted bbox transformations to get them
         # into the same order as the anchors:
 

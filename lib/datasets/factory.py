@@ -14,7 +14,6 @@ __sets = {}
 from datasets.pascal_voc import pascal_voc
 from datasets.kits_19 import kits_19
 from datasets.coco import coco
-#from datasets.coco import kits_19
 from datasets.imagenet import imagenet
 from datasets.vg import vg
 

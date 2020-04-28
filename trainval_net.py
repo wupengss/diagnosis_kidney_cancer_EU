@@ -32,7 +32,7 @@ from model.utils.net_utils import weights_normal_init, save_net, load_net, \
 
 from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet, resnet3d
-
+#torch.backends.cudnn.enabled=False
 def parse_args():
   """
   Parse input arguments
