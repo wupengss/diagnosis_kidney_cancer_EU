@@ -75,7 +75,7 @@ class _AnchorTargetLayer(nn.Module):
         A = self._num_anchors
         K = shifts.size(0)
 
-        self._anchors = self._anchors.type_as(gt_boxes).cuda() # move to specific gpu.
+        self._anchors = self._anchors.type_as(gt_boxes) # move to specific gpu.
         all_anchors = self._anchors.view(1, A, 4) + shifts.view(K, 1, 4)
         all_anchors = all_anchors.view(K * A, 4)
 
@@ -248,7 +248,7 @@ class _AnchorTargetLayer3d(nn.Module):
         A = self._num_anchors
         K = shifts.size(0)
 
-        self._anchors = self._anchors.type_as(gt_boxes).cuda() # move to specific gpu.
+        self._anchors = self._anchors.type_as(gt_boxes) # move to specific gpu.
         all_anchors = self._anchors.view(1, A, 6) + shifts.view(K, 1, 6)
         all_anchors = all_anchors.view(K * A, 6)
 

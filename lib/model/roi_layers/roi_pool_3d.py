@@ -22,13 +22,13 @@ class roi_pooling(Function):
         for i in range(num_rois):
             roi = rois[:, i, 1:]
             im = input[..., int(torch.round(roi[:,0])*spatial_scale):int(torch.round(roi[:,3])*spatial_scale+1), \
-                int(torch.round(roi[:,1])*spatial_scale):int(torch.round(roi[:,4])*spatial_scale+1), int(torch.round(roi[:,2])*spatial_scale):int(torch.round(roi[:,5])*spatial_scale+1)].cuda()
+                int(torch.round(roi[:,1])*spatial_scale):int(torch.round(roi[:,4])*spatial_scale+1), int(torch.round(roi[:,2])*spatial_scale):int(torch.round(roi[:,5])*spatial_scale+1)]
             out = Ada_pooling(im)
             output.append(out[0])
             argsmax_data.append(out[1])
         argsmax_data = torch.cat(argsmax_data,0)
-        ctx.save_for_backward(input,roi,argsmax_data)
-        output = torch.cat(output, 0).cuda()
+        ctx.save_for_backward(input,rois,argsmax_data)
+        output = torch.cat(output, 0)
         #if has_backward:
         #    output.sum().backward()
         return Variable(output)
@@ -39,17 +39,19 @@ class roi_pooling(Function):
         input, rois, argmax = ctx.saved_tensors
         size = ctx.output_size
         spatial_scale = ctx.spatial_scale
-        grad_input = torch.zeros(input.shape,rois.dtype).cuda()
+        shape_grad = numpy.array(input.shape)
+        shape_grad[0] = rois.size()[1]
+        grad_input = torch.zeros(tuple(shape_grad))
         channels, height, width, slices = input.shape[1:]
 
         for i in six.moves.range(rois.size()[1]):
             xmin, ymin, zmin, xmax, ymax, zmax = rois[0][i][1:]
-            xmin = int(round(xmin*spatial_scale))
-            xmax = int(round(xmax*spatial_scale))
-            ymin = int(round(ymin*spatial_scale))
-            ymax = int(round(ymax*spatial_scale))
-            zmin = int(round(zmin*spatial_scale))
-            zmax = int(round(zmax*spatial_scale))
+            xmin = int(torch.round(xmin*spatial_scale))
+            xmax = int(torch.round(xmax*spatial_scale))
+            ymin = int(torch.round(ymin*spatial_scale))
+            ymax = int(torch.round(ymax*spatial_scale))
+            zmin = int(torch.round(zmin*spatial_scale))
+            zmax = int(torch.round(zmax*spatial_scale))
 
             roi_width = max(xmax - xmin + 1, 1)
             roi_height = max(ymax - ymin + 1, 1)
@@ -85,7 +87,7 @@ class roi_pooling(Function):
                                             grad_input[i, c, h, w, z] += \
                                                 grad_output[i, c, ph, pw, ps]
 
-        return Variable(grad_input.cuda()), None, None, None
+        return Variable(grad_input), None, None, None
 
 roi_pooling = roi_pooling.apply
 

@@ -41,7 +41,7 @@ class _ProposalTargetLayer(nn.Module):
         gt_boxes_append[:,:,1:5] = gt_boxes[:,:,:4]
 
         # Include ground-truth boxes in the set of candidate rois
-        all_rois = torch.cat([all_rois.cuda(), gt_boxes_append.cuda()], 1)
+        all_rois = torch.cat([all_rois, gt_boxes_append], 1)
 
         num_images = 1
         rois_per_image = int(cfg.TRAIN.BATCH_SIZE / num_images)
@@ -108,8 +108,8 @@ class _ProposalTargetLayer(nn.Module):
 
         if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
             # Optionally normalize targets by a precomputed mean and stdev
-            targets = ((targets - self.BBOX_NORMALIZE_MEANS.cuda().expand_as(targets))
-                        / self.BBOX_NORMALIZE_STDS.cuda().expand_as(targets))
+            targets = ((targets - self.BBOX_NORMALIZE_MEANS.expand_as(targets))
+                        / self.BBOX_NORMALIZE_STDS.expand_as(targets))
 
         return targets
 
@@ -156,7 +156,7 @@ class _ProposalTargetLayer(nn.Module):
                 # torch.randperm seems has a bug on multi-gpu setting that cause the segfault.
                 # See https://github.com/pytorch/pytorch/issues/1868 for more details.
                 # use numpy instead.
-                #rand_num = torch.randperm(fg_num_rois).long().cuda()
+                #rand_num = torch.randperm(fg_num_rois).long()
                 rand_num = torch.from_numpy(np.random.permutation(fg_num_rois)).type_as(gt_boxes).long()
                 fg_inds = fg_inds[rand_num[:fg_rois_per_this_image]]
 
@@ -165,14 +165,14 @@ class _ProposalTargetLayer(nn.Module):
 
                 # Seems torch.rand has a bug, it will generate very large number and make an error.
                 # We use numpy rand instead.
-                #rand_num = (torch.rand(bg_rois_per_this_image) * bg_num_rois).long().cuda()
+                #rand_num = (torch.rand(bg_rois_per_this_image) * bg_num_rois).long()
                 rand_num = np.floor(np.random.rand(bg_rois_per_this_image) * bg_num_rois)
                 rand_num = torch.from_numpy(rand_num).type_as(gt_boxes).long()
                 bg_inds = bg_inds[rand_num]
 
             elif fg_num_rois > 0 and bg_num_rois == 0:
                 # sampling fg
-                #rand_num = torch.floor(torch.rand(rois_per_image) * fg_num_rois).long().cuda()
+                #rand_num = torch.floor(torch.rand(rois_per_image) * fg_num_rois).long()
                 rand_num = np.floor(np.random.rand(rois_per_image) * fg_num_rois)
                 rand_num = torch.from_numpy(rand_num).type_as(gt_boxes).long()
                 fg_inds = fg_inds[rand_num]
@@ -180,7 +180,7 @@ class _ProposalTargetLayer(nn.Module):
                 bg_rois_per_this_image = 0
             elif bg_num_rois > 0 and fg_num_rois == 0:
                 # sampling bg
-                #rand_num = torch.floor(torch.rand(rois_per_image) * bg_num_rois).long().cuda()
+                #rand_num = torch.floor(torch.rand(rois_per_image) * bg_num_rois).long()
                 rand_num = np.floor(np.random.rand(rois_per_image) * bg_num_rois)
                 rand_num = torch.from_numpy(rand_num).type_as(gt_boxes).long()
 
@@ -236,7 +236,7 @@ class _ProposalTargetLayer3d(nn.Module):
         gt_boxes_append[:,:,1:7] = gt_boxes[:,:,:6]
 
         # Include ground-truth boxes in the set of candidate rois
-        all_rois = torch.cat([all_rois.cuda(), gt_boxes_append.cuda()], 1)
+        all_rois = torch.cat([all_rois, gt_boxes_append], 1)
 
         num_images = 1
         rois_per_image = int(cfg.TRAIN.BATCH_SIZE / num_images)
@@ -303,8 +303,8 @@ class _ProposalTargetLayer3d(nn.Module):
 
         if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
             # Optionally normalize targets by a precomputed mean and stdev
-            targets = ((targets - self.BBOX_NORMALIZE_MEANS.cuda().expand_as(targets))
-                        / self.BBOX_NORMALIZE_STDS.cuda().expand_as(targets))
+            targets = ((targets - self.BBOX_NORMALIZE_MEANS.expand_as(targets))
+                        / self.BBOX_NORMALIZE_STDS.expand_as(targets))
 
         return targets
 
@@ -351,7 +351,7 @@ class _ProposalTargetLayer3d(nn.Module):
                 # torch.randperm seems has a bug on multi-gpu setting that cause the segfault.
                 # See https://github.com/pytorch/pytorch/issues/1868 for more details.
                 # use numpy instead.
-                #rand_num = torch.randperm(fg_num_rois).long().cuda()
+                #rand_num = torch.randperm(fg_num_rois).long()
                 rand_num = torch.from_numpy(np.random.permutation(fg_num_rois)).type_as(gt_boxes).long()
                 fg_inds = fg_inds[rand_num[:fg_rois_per_this_image]]
 
@@ -360,14 +360,14 @@ class _ProposalTargetLayer3d(nn.Module):
 
                 # Seems torch.rand has a bug, it will generate very large number and make an error.
                 # We use numpy rand instead.
-                #rand_num = (torch.rand(bg_rois_per_this_image) * bg_num_rois).long().cuda()
+                #rand_num = (torch.rand(bg_rois_per_this_image) * bg_num_rois).long()
                 rand_num = np.floor(np.random.rand(bg_rois_per_this_image) * bg_num_rois)
                 rand_num = torch.from_numpy(rand_num).type_as(gt_boxes).long()
                 bg_inds = bg_inds[rand_num]
 
             elif fg_num_rois > 0 and bg_num_rois == 0:
                 # sampling fg
-                #rand_num = torch.floor(torch.rand(rois_per_image) * fg_num_rois).long().cuda()
+                #rand_num = torch.floor(torch.rand(rois_per_image) * fg_num_rois).long()
                 rand_num = np.floor(np.random.rand(rois_per_image) * fg_num_rois)
                 rand_num = torch.from_numpy(rand_num).type_as(gt_boxes).long()
                 fg_inds = fg_inds[rand_num]
@@ -375,7 +375,7 @@ class _ProposalTargetLayer3d(nn.Module):
                 bg_rois_per_this_image = 0
             elif bg_num_rois > 0 and fg_num_rois == 0:
                 # sampling bg
-                #rand_num = torch.floor(torch.rand(rois_per_image) * bg_num_rois).long().cuda()
+                #rand_num = torch.floor(torch.rand(rois_per_image) * bg_num_rois).long()
                 rand_num = np.floor(np.random.rand(rois_per_image) * bg_num_rois)
                 rand_num = torch.from_numpy(rand_num).type_as(gt_boxes).long()
 

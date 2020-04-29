@@ -345,6 +345,7 @@ class resnet(_fasterRCNN):
       resnet.load_state_dict({k:v for k,v in state_dict.items() if k in resnet.state_dict()})
 
     # Build resnet.
+
     self.RCNN_base = nn.Sequential(resnet.conv1, resnet.bn1,resnet.relu,
       resnet.maxpool,resnet.layer1,resnet.layer2,resnet.layer3)
 
@@ -408,7 +409,7 @@ class resnet3d(_fasterRCNN3d):
 
 
   def _init_modules(self,net):
-    resnet = resnet18_3d()
+    resnet = resnet18_3d().cpu()
 
     if self.pretrained == True:
       print("Loading pretrained weights from %s" %(self.model_path))
@@ -417,7 +418,7 @@ class resnet3d(_fasterRCNN3d):
 
     # Build resnet.
     self.RCNN_base = nn.Sequential(resnet.conv1, resnet.bn1,resnet.relu,
-      resnet.maxpool,resnet.layer1,resnet.layer2,resnet.layer3)
+      resnet.maxpool,resnet.layer1,resnet.layer2,resnet.layer3).cpu()
 
     self.RCNN_top = nn.Sequential(resnet.layer4)
 

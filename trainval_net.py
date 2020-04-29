@@ -15,7 +15,9 @@ import argparse
 import pprint
 import pdb
 import time
-os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+import torch
+#os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
+torch.backends.cudnn.enabled = False
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
@@ -30,7 +32,7 @@ from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
 from model.utils.net_utils import weights_normal_init, save_net, load_net, \
       adjust_learning_rate, save_checkpoint, clip_gradient
 
-from model.faster_rcnn.vgg16 import vgg16
+#from model.faster_rcnn.vgg16 import vgg16
 from model.faster_rcnn.resnet import resnet, resnet3d
 #torch.backends.cudnn.enabled=False
 def parse_args():
@@ -40,10 +42,10 @@ def parse_args():
   parser = argparse.ArgumentParser(description='Train a Fast R-CNN network')
   parser.add_argument('--dataset', dest='dataset',
                       help='training dataset',
-                      default='pascal_voc', type=str)
+                      default='kits_19', type=str)
   parser.add_argument('--net', dest='net',
                     help='vgg16, res101',
-                    default='res101', type=str)
+                    default='res18_3d', type=str)
   parser.add_argument('--start_epoch', dest='start_epoch',
                       help='starting epoch',
                       default=1, type=int)
@@ -223,19 +225,16 @@ if __name__ == '__main__':
 
   # ship to cuda
   if args.cuda:
-    im_data = im_data.cuda()
-    im_info = im_info.cuda()
-    num_boxes = num_boxes.cuda()
-    gt_boxes = gt_boxes.cuda()
+    im_data = im_data
+    im_info = im_info
+    num_boxes = num_boxes
+    gt_boxes = gt_boxes
 
   # make variable
   im_data = Variable(im_data)
   im_info = Variable(im_info)
   num_boxes = Variable(num_boxes)
   gt_boxes = Variable(gt_boxes)
-
-  if args.cuda:
-    cfg.CUDA = True
 
   # initilize the network here.
   if args.net == 'vgg16':
@@ -269,7 +268,7 @@ if __name__ == '__main__':
         params += [{'params':[value],'lr':lr, 'weight_decay': cfg.TRAIN.WEIGHT_DECAY}]
   args.cuda = True
   if args.cuda:
-    fasterRCNN.cuda()
+    fasterRCNN
       
   if args.optimizer == "adam":
     lr = lr * 0.1

@@ -45,7 +45,7 @@ class _fasterRCNN(nn.Module):
         im_info = im_info.data
         gt_boxes = gt_boxes.data
         num_boxes = num_boxes.data
-        im_data = im_data.cuda()
+        im_data = im_data
         # feed image data to base model to obtain base feature map
         base_feat = self.RCNN_base(im_data)
 
@@ -89,7 +89,7 @@ class _fasterRCNN(nn.Module):
         if self.training and not self.class_agnostic:
             # select the corresponding columns according to roi labels
             bbox_pred_view = bbox_pred.view(bbox_pred.size(0), int(bbox_pred.size(1) / 4), 4)
-            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.cuda().view(rois_label.cuda().size(0), 1, 1).expand(rois_label.cuda().size(0), 1, 4))
+            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.view(rois_label.size(0), 1, 1).expand(rois_label.size(0), 1, 4))
             bbox_pred = bbox_pred_select.squeeze(1)
 
         # compute object classification probability
@@ -158,11 +158,12 @@ class _fasterRCNN3d(nn.Module):
     def forward(self, im_data, im_info, gt_boxes, num_boxes):
         batch_size = im_data.size(0)
 
-        im_info = im_info.data
-        gt_boxes = gt_boxes.data
-        num_boxes = num_boxes.data
-        im_data = im_data.cuda()
+        im_info = im_info.data.cpu()
+        gt_boxes = gt_boxes.data.cpu()
+        num_boxes = num_boxes.data.cpu()
+        im_data = im_data.cpu()
         # feed image data to base model to obtain base feature map
+        
         base_feat = self.RCNN_base(im_data)
 
         # feed base feature map tp RPN to obtain rois
@@ -200,7 +201,7 @@ class _fasterRCNN3d(nn.Module):
         if self.training and not self.class_agnostic:
             # select the corresponding columns according to roi labels
             bbox_pred_view = bbox_pred.view(bbox_pred.size(0), int(bbox_pred.size(1) / 6), 6)
-            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.cuda().view(rois_label.cuda().size(0), 1, 1).expand(rois_label.cuda().size(0), 1, 6))
+            bbox_pred_select = torch.gather(bbox_pred_view, 1, rois_label.view(rois_label.size(0), 1, 1).expand(rois_label.size(0), 1, 6))
             bbox_pred = bbox_pred_select.squeeze(1)
 
         # compute object classification probability

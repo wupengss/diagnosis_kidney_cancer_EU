@@ -321,19 +321,19 @@ def bbox_overlaps_batch(anchors, gt_boxes):
         boxes = anchors.view(batch_size, N, 1, 4).expand(batch_size, N, K, 4)
         query_boxes = gt_boxes.view(batch_size, 1, K, 4).expand(batch_size, N, K, 4)
 
-        iw = (torch.min(boxes[:,:,:,2], query_boxes[:,:,:,2].cuda()) -
-            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0].cuda()) + 1)
+        iw = (torch.min(boxes[:,:,:,2], query_boxes[:,:,:,2]) -
+            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0]) + 1)
         iw[iw < 0] = 0
 
-        ih = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3].cuda()) -
-            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1].cuda()) + 1)
+        ih = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3]) -
+            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1]) + 1)
         ih[ih < 0] = 0
-        ua = anchors_area + gt_boxes_area.cuda() - (iw * ih)
+        ua = anchors_area + gt_boxes_area - (iw * ih)
         overlaps = iw * ih / ua
 
         # mask the overlap here.
-        overlaps.masked_fill_(gt_area_zero.view(batch_size, 1, K).expand(batch_size, N, K).cuda(), 0)
-        overlaps.masked_fill_(anchors_area_zero.view(batch_size, N, 1).expand(batch_size, N, K).cuda(), -1)
+        overlaps.masked_fill_(gt_area_zero.view(batch_size, 1, K).expand(batch_size, N, K), 0)
+        overlaps.masked_fill_(anchors_area_zero.view(batch_size, N, 1).expand(batch_size, N, K), -1)
 
     elif anchors.dim() == 3:
         N = anchors.size(1)
@@ -360,19 +360,19 @@ def bbox_overlaps_batch(anchors, gt_boxes):
         boxes = anchors.view(batch_size, N, 1, 4).expand(batch_size, N, K, 4)
         query_boxes = gt_boxes.view(batch_size, 1, K, 4).expand(batch_size, N, K, 4)
 
-        iw = (torch.min(boxes[:,:,:,2], query_boxes[:,:,:,2].cuda()) -
-            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0].cuda()) + 1)
+        iw = (torch.min(boxes[:,:,:,2], query_boxes[:,:,:,2]) -
+            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0]) + 1)
         iw[iw < 0] = 0
 
-        ih = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3].cuda()) -
-            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1].cuda()) + 1)
+        ih = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3]) -
+            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1]) + 1)
         ih[ih < 0] = 0
-        ua = anchors_area + gt_boxes_area.cuda() - (iw * ih)
+        ua = anchors_area + gt_boxes_area - (iw * ih)
 
         overlaps = iw * ih / ua
 
         # mask the overlap here.
-        overlaps.masked_fill_(gt_area_zero.cuda().view(batch_size, 1, K).expand(batch_size, N, K), 0)
+        overlaps.masked_fill_(gt_area_zero.view(batch_size, 1, K).expand(batch_size, N, K), 0)
         overlaps.masked_fill_(anchors_area_zero.view(batch_size, N, 1).expand(batch_size, N, K), -1)
     else:
         raise ValueError('anchors input dimension is not correct.')
@@ -413,24 +413,24 @@ def bbox_overlaps_batch_3d(anchors, gt_boxes):
         boxes = anchors.view(batch_size, N, 1, 6).expand(batch_size, N, K, 6)
         query_boxes = gt_boxes.view(batch_size, 1, K, 6).expand(batch_size, N, K, 6)
 
-        iw = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3].cuda()) -
-            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0].cuda()) + 1)
+        iw = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3]) -
+            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0]) + 1)
         iw[iw < 0] = 0
 
-        ih = (torch.min(boxes[:,:,:,4], query_boxes[:,:,:,4].cuda()) -
-            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1].cuda()) + 1)
+        ih = (torch.min(boxes[:,:,:,4], query_boxes[:,:,:,4]) -
+            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1]) + 1)
         ih[ih < 0] = 0
 
-        iz = (torch.min(boxes[:,:,:,5], query_boxes[:,:,:,5].cuda()) -
-        torch.max(boxes[:,:,:,2], query_boxes[:,:,:,2].cuda()) + 1)
+        iz = (torch.min(boxes[:,:,:,5], query_boxes[:,:,:,5]) -
+        torch.max(boxes[:,:,:,2], query_boxes[:,:,:,2]) + 1)
         iz[iz < 0] = 0
 
-        ua = anchors_area + gt_boxes_area.cuda() - (iw * ih * iz)
+        ua = anchors_area + gt_boxes_area - (iw * ih * iz)
         overlaps = iw * ih * iz / ua
 
         # mask the overlap here.
-        overlaps.masked_fill_(gt_area_zero.view(batch_size, 1, K).expand(batch_size, N, K).cuda(), 0)
-        overlaps.masked_fill_(anchors_area_zero.view(batch_size, N, 1).expand(batch_size, N, K).cuda(), -1)
+        overlaps.masked_fill_(gt_area_zero.view(batch_size, 1, K).expand(batch_size, N, K), 0)
+        overlaps.masked_fill_(anchors_area_zero.view(batch_size, N, 1).expand(batch_size, N, K), -1)
 
     elif anchors.dim() == 3:
         N = anchors.size(1)
@@ -459,24 +459,24 @@ def bbox_overlaps_batch_3d(anchors, gt_boxes):
         boxes = anchors.view(batch_size, N, 1, 6).expand(batch_size, N, K, 6)
         query_boxes = gt_boxes.view(batch_size, 1, K, 6).expand(batch_size, N, K, 6)
 
-        iw = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3].cuda()) -
-            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0].cuda()) + 1)
+        iw = (torch.min(boxes[:,:,:,3], query_boxes[:,:,:,3]) -
+            torch.max(boxes[:,:,:,0], query_boxes[:,:,:,0]) + 1)
         iw[iw < 0] = 0
 
-        ih = (torch.min(boxes[:,:,:,4], query_boxes[:,:,:,4].cuda()) -
-            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1].cuda()) + 1)
+        ih = (torch.min(boxes[:,:,:,4], query_boxes[:,:,:,4]) -
+            torch.max(boxes[:,:,:,1], query_boxes[:,:,:,1]) + 1)
         ih[ih < 0] = 0
 
-        iz = (torch.min(boxes[:,:,:,5], query_boxes[:,:,:,5].cuda()) -
-        torch.max(boxes[:,:,:,2], query_boxes[:,:,:,2].cuda()) + 1)
+        iz = (torch.min(boxes[:,:,:,5], query_boxes[:,:,:,5]) -
+        torch.max(boxes[:,:,:,2], query_boxes[:,:,:,2]) + 1)
         iz[iz < 0] = 0
 
-        ua = anchors_area + gt_boxes_area.cuda() - (iw * ih * iz)
+        ua = anchors_area + gt_boxes_area - (iw * ih * iz)
 
         overlaps = iw * ih * iz/ ua
 
         # mask the overlap here.
-        overlaps.masked_fill_(gt_area_zero.cuda().view(batch_size, 1, K).expand(batch_size, N, K), 0)
+        overlaps.masked_fill_(gt_area_zero.view(batch_size, 1, K).expand(batch_size, N, K), 0)
         overlaps.masked_fill_(anchors_area_zero.view(batch_size, N, 1).expand(batch_size, N, K), -1)
     else:
         pass
